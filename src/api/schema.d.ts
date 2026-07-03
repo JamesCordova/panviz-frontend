@@ -38,6 +38,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/predict/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Compare Predictions */
+        get: operations["compare_predictions_api_v1_predict_compare_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/predict/models": {
         parameters: {
             query?: never;
@@ -53,6 +70,41 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Models */
+        get: operations["list_models_api_v1_models_get"];
+        put?: never;
+        /** Upload Model */
+        post: operations["upload_model_api_v1_models_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/models/{model_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Set Model Active */
+        patch: operations["set_model_active_api_v1_models__model_id__patch"];
         trace?: never;
     };
     "/api/v1/regions": {
@@ -131,6 +183,53 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** Body_upload_model_api_v1_models_post */
+        Body_upload_model_api_v1_models_post: {
+            /**
+             * File
+             * Format: binary
+             * @description Artefacto .joblib, .pkl o .onnx
+             */
+            file: string;
+            /**
+             * Name
+             * @description Identificador estable, ej. 'sarima_v1'
+             */
+            name: string;
+            /**
+             * Version
+             * @description Version del artefacto, ej. '1.0.0'
+             */
+            version: string;
+            /**
+             * Algorithm
+             * @description Ej. 'SARIMA', 'XGBoost', 'LSTM'
+             */
+            algorithm: string;
+            /**
+             * Disease
+             * @default pneumonia
+             */
+            disease: string;
+            /**
+             * Trained At
+             * Format: date-time
+             * @description Fecha en que se entreno el modelo
+             */
+            trained_at: string;
+            /**
+             * Context Length
+             * @default 52
+             */
+            context_length: number;
+            /**
+             * Metrics
+             * @description JSON opcional, ej. '{"mae": 3.2}'
+             */
+            metrics?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -201,14 +300,61 @@ export interface components {
             /** Rateper100K */
             ratePer100K?: number | null;
         };
+        /** MLModelRead */
+        MLModelRead: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Version */
+            version: string;
+            /** Algorithm */
+            algorithm: string;
+            /** Disease */
+            disease: string;
+            /** Artifactformat */
+            artifactFormat: string;
+            /** Contextlength */
+            contextLength: number;
+            /** Isactive */
+            isActive: boolean;
+            /** Metrics */
+            metrics?: {
+                [key: string]: unknown;
+            } | null;
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Trainedat
+             * Format: date-time
+             */
+            trainedAt: string;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+        };
+        /** MLModelUpdate */
+        MLModelUpdate: {
+            /** Isactive */
+            isActive: boolean;
+        };
         /** ModelInfo */
         ModelInfo: {
             /** Name */
             name: string;
             /** Version */
             version: string;
+            /** Algorithm */
+            algorithm?: string | null;
             /** Ismock */
             isMock: boolean;
+            /**
+             * Hasnativeci
+             * @default false
+             */
+            hasNativeCi: boolean;
             /** Trainedat */
             trainedAt?: string | null;
         };
@@ -358,7 +504,7 @@ export interface operations {
                 region: string;
                 disease?: string;
                 /** @description Numero de periodos (semanas) a predecir */
-                horizon: number;
+                horizon?: number;
             };
             header?: never;
             path?: never;
@@ -373,6 +519,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PredictionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    compare_predictions_api_v1_predict_compare_get: {
+        parameters: {
+            query: {
+                /** @description Codigo de region, ej. 'PE-LIM' */
+                region: string;
+                disease?: string;
+                /** @description Numero de periodos (semanas) a predecir */
+                horizon?: number;
+                /** @description Nombres de modelo separados por coma, ej. 'mock,sarima_v1'. Si se omite, compara todos los modelos disponibles. */
+                models?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PredictionResponse"][];
                 };
             };
             /** @description Validation Error */
@@ -402,6 +585,98 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ModelInfo"][];
+                };
+            };
+        };
+    };
+    list_models_api_v1_models_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MLModelRead"][];
+                };
+            };
+        };
+    };
+    upload_model_api_v1_models_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_model_api_v1_models_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MLModelRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_model_active_api_v1_models__model_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+            };
+            path: {
+                model_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MLModelUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MLModelRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
